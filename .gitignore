@@ -1,0 +1,9 @@
+.pio/
+.vscode/
+*.o
+*.out
+.DS_Store
+*.asv
+*.mex*
+slprj/
+data/raw/
