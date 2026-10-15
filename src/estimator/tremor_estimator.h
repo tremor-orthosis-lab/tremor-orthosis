@@ -18,8 +18,8 @@ struct EstimatorParams {
   float Ts = 0.002f;  // [s] sample time (500 Hz)
 
   // Kalman filter (tremor_params.m)
-  float q_v = 200.0f;     // voluntary white-acceleration intensity [rad²/s³]
-  float q_t = 1000.0f;    // tremor white-acceleration intensity [rad²/s³]
+  float q_v = 1000.0f;    // voluntary white-acceleration intensity [rad²/s³]
+  float q_t = 400.0f;     // tremor white-acceleration intensity [rad²/s³]
   float rho = 0.9998f;    // oscillator damping per step
   float r_theta = 25.0f * (2.0f * 0.017453292f) * (2.0f * 0.017453292f);  // [rad²]
   float r_omega = 0.05f * 0.05f;                                          // [(rad/s)²]

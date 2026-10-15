@@ -3,7 +3,7 @@
 % Question
 %   run_kalman_synthetic.m showed that the Kalman filter is near perfect
 %   when its model frequency f0 equals the true tremor frequency, and lags
-%   by 16-24 deg when it is off by 1 Hz. Real tremor frequency varies
+%   by tens of degrees when it is off by 1 Hz. Real tremor frequency varies
 %   (between patients, over minutes, with medication). Can we estimate f0
 %   online and get the "oracle" performance?
 %

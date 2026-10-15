@@ -9,9 +9,13 @@ p.Ts   = 0.002;        % sample time [s] (500 Hz loop, contract C4)
 % --- Process noise (continuous white acceleration intensities) ---------
 % Large q_v: the voluntary state is allowed to change quickly, so slow
 % motion is absorbed by the voluntary states and does not leak into tremor.
-% Small q_t: the tremor states follow the oscillator model closely.
-p.q_v  = 200;          % voluntary  [rad^2/s^3]
-p.q_t  = 1000;         % tremor     [rad^2/s^3]
+% Smaller q_t: the tremor states follow the oscillator model closely.
+% Re-tuned for the closed loop (design_controller.m, J-2.3): with the
+% earlier q_v = 200, q_t = 1000 the controller amplified voluntary motion
+% at 0.5 Hz by 20-50 %. Possible because the WFLC now gives the frequency:
+% a narrower tremor model no longer costs phase lag.
+p.q_v  = 1000;         % voluntary  [rad^2/s^3]
+p.q_t  = 400;          % tremor     [rad^2/s^3]
 p.rho  = 0.9998;       % oscillator damping per step (1 = undamped)
 
 % --- Measurement noise ---------------------------------------------------
@@ -39,6 +43,21 @@ p.wflc.mu1    = 5e-3;   % amplitude-weight adaptation gain
 p.wflc.f_init = 5;      % [Hz] initial guess
 p.wflc.f_min  = 3;      % [Hz] clamp of the estimate
 p.wflc.f_max  = 8;
+
+% --- Wrist + orthosis model (contracts.h, C4; J-2.1) -----------------------
+%   J*theta'' + B*theta' + K*theta = tau_tremor + tau_voluntary + tau_motor
+p.plant.J = 1.5e-3;     % [kg m^2] hand + shell inertia
+p.plant.K = 0.3;        % [N m/rad] passive stiffness
+p.plant.B = 0.02;       % [N m s/rad] damping
+p.plant.delay_steps = 3;   % sensor -> torque delay, 3 x 2 ms = 6 ms
+
+% --- Controller (design_controller.m, J-2.3) -------------------------------
+% tau = -k_omega(f_hat) * omega_t_hat  ("virtual damper" on the tremor
+% velocity only), k_omega interpolated in f_hat. In the 4-gain format of
+% contracts.h: K = [0, 0, 0, k_omega].
+p.ctrl.f0      = [4 5 6];            % [Hz]
+p.ctrl.k_omega = [0.070 0.090 0.105];  % [N m s/rad], from design_controller.m
+p.ctrl.tau_max = 0.3;               % [N m] software limit (C6)
 
 % --- Alternative: extended Kalman filter with the frequency as 5th state --
 p.ekf.q_w    = 2*(2*pi)^2;  % random-walk intensity of w [rad^2/s^3]

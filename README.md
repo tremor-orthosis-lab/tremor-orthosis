@@ -26,7 +26,7 @@ An active 1-DOF wrist orthosis that suppresses Parkinsonian tremor while leaving
 
 - **Sensing** — two MPU-6050 (0x68 forearm, 0x69 hand); the relative gyro rate gives the wrist angular velocity.
 - **Estimation** — state `x = [θ_v, ω_v, θ_t, ω_t]`: voluntary motion as a constant-velocity model driven by white acceleration, tremor as a damped discrete harmonic oscillator. Its frequency is tracked online by a weighted-frequency Fourier linear combiner (WFLC) on the relative gyro rate, which keeps the phase lag of the tremor estimate below 5° when the tremor frequency drifts between 4 and 6 Hz (synthetic data).
-- **Control** — discrete LQR on the tremor states only, gain-scheduled on the tremor frequency.
+- **Control** — torque proportional to the estimated tremor velocity only (a "virtual damper" that leaves voluntary motion free), gain-scheduled on the estimated tremor frequency. Designed with the Kalman filter and the 6 ms delay in the loop: a textbook full-state LQR with an internal tremor model becomes unstable once it is fed with the Kalman estimate. Simulation (nominal model): 55–62 % tremor attenuation at 4–6 Hz, voluntary motion at 0.5 Hz changed by less than 8 %, stable for ±30–50 % model errors.
 - **Actuation** — two DFRobot 4015 gimbal BLDC motors with integrated AS5600 encoders (SimpleFOC, torque mode), pulley-to-lever ratio ≈ 3, antagonistic cables with pretension.
 - **Safety** — software torque limit, mechanical stops at ±40°, loop and IMU watchdogs, hard-wired emergency stop, motors disabled at boot.
 
