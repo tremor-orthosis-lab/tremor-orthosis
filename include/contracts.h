@@ -1,8 +1,9 @@
 // contracts.h — Interface contracts shared by every part of the firmware.
 //
 // This file is the single source of truth for the contracts C1–C7 agreed at
-// kick-off (S0). Any change here must be announced to the other teammate
-// before it is merged into main.
+// kick-off (S0). Values may change at any time: tell the other teammate and
+// commit. Never change the sign conventions (C2) without re-checking all the
+// code and the recorded data.
 //
 // Ownership (C5):
 //   src/drivers/    -> Louis  (motors, IMU, power, safety)
@@ -18,12 +19,20 @@
 //      test bench)
 // ---------------------------------------------------------------------------
 namespace pins {
+// I²C bus 0 (Wire): both IMUs + encoder of motor A
 constexpr int I2C_SDA = 21;
 constexpr int I2C_SCL = 22;
 constexpr uint32_t I2C_FREQ_HZ = 400000;
 
+// I²C bus 1 (Wire1): encoder of motor B. The AS5600 address is fixed (0x36),
+// so the two motor encoders cannot share a bus.
+constexpr int I2C1_SDA = 19;
+constexpr int I2C1_SCL = 13;
+
 constexpr uint8_t IMU1_ADDR = 0x68;  // forearm, AD0 -> GND
 constexpr uint8_t IMU2_ADDR = 0x69;  // hand shell, AD0 -> 3.3 V
+constexpr uint8_t ENC_ADDR = 0x36;   // AS5600 built into the DFRobot 4015
+                                     // motor (GH1.25 4-pin I²C connector)
 
 // Motor A pulls the palmar cable (flexion, tau < 0)
 constexpr int MOTOR_A_PWM[3] = {25, 26, 27};
@@ -31,9 +40,6 @@ constexpr int MOTOR_A_EN = 14;
 // Motor B pulls the dorsal cable (extension, tau > 0)
 constexpr int MOTOR_B_PWM[3] = {32, 33, 4};
 constexpr int MOTOR_B_EN = 17;
-
-constexpr int ENC_A_ANALOG = 34;  // AS5600 analog output, motor A
-constexpr int ENC_B_ANALOG = 35;  // AS5600 analog output, motor B
 
 constexpr int VBAT_ADC = 36;      // divider 100 k / 20 k
 constexpr int ESTOP = 23;         // button to GND, internal pull-up
@@ -62,14 +68,11 @@ struct ImuSample {
 constexpr int N_F0 = 3;
 constexpr int N_STATE = 4;  // x = [theta_v, omega_v, theta_t, omega_t]
 
+// The Kalman / WFLC tuning is in src/estimator/tremor_estimator.h
+// (EstimatorParams), kept identical to matlab/tremor_params.m.
 struct Gains {
   float f0_hz[N_F0] = {4.0f, 5.0f, 6.0f};
   float K[N_F0][N_STATE] = {};  // LQR gains, tau = -K·x_hat
-  // Kalman tuning (J-1.5)
-  float q_voluntary = 1e-3f;
-  float q_tremor = 1e-1f;
-  float r_theta = 1e-2f;
-  float r_omega = 1e-3f;
 };
 
 struct DebugState {
@@ -87,10 +90,10 @@ namespace mech {
 constexpr float J_HAND = 1.5e-3f;      // [kg·m²] hand + shell inertia
 constexpr float K_WRIST = 0.3f;        // [N·m/rad] passive stiffness
 constexpr float B_WRIST = 0.02f;       // [N·m·s/rad] damping
-constexpr float R_PULLEY = 0.005f;     // [m] motor pulley radius
+constexpr float R_PULLEY = 0.010f;     // [m] motor pulley radius
 constexpr float R_WRIST = 0.030f;      // [m] cable lever arm at the wrist
-constexpr float GEAR_N = R_WRIST / R_PULLEY;
-constexpr float CABLE_PRETENSION_N = 5.0f;
+constexpr float GEAR_N = R_WRIST / R_PULLEY;  // = 3 (DFRobot 4015 motor)
+constexpr float CABLE_PRETENSION_N = 1.5f;    // [N] tune between 1 and 2 N
 constexpr float DELAY_S = 0.006f;      // sensor -> torque total delay
 }  // namespace mech
 

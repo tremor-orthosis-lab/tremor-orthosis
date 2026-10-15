@@ -4,7 +4,7 @@
 
 An active 1-DOF wrist orthosis that suppresses Parkinsonian tremor while leaving voluntary motion and the fingers free. Two IMUs measure the wrist motion; an ESP32 separates slow voluntary movement (< 2 Hz) from tremor (4–7 Hz) with a discrete Kalman filter at 500 Hz, and an LQR controller applies a counter-torque through Dyneema cables driven by two miniature brushless motors.
 
-> **Status — work in progress (Phase 1, October 2026).** The firmware skeleton and interface contracts are in place. No experimental result has been validated yet; results will be added here as they are measured.
+> **Status — work in progress (Phase 1, October 2026).** The firmware skeleton, interface contracts and the tremor estimator are in place. The estimator is validated on synthetic data only (MATLAB, and C++ against MATLAB); no experimental result has been validated yet. Results will be added here as they are measured.
 
 ## Targets
 
@@ -25,9 +25,9 @@ An active 1-DOF wrist orthosis that suppresses Parkinsonian tremor while leaving
 ```
 
 - **Sensing** — two MPU-6050 (0x68 forearm, 0x69 hand); the relative gyro rate gives the wrist angular velocity.
-- **Estimation** — state `x = [θ_v, ω_v, θ_t, ω_t]`: voluntary motion as a random walk, tremor as a discrete harmonic oscillator at the estimated frequency.
+- **Estimation** — state `x = [θ_v, ω_v, θ_t, ω_t]`: voluntary motion as a constant-velocity model driven by white acceleration, tremor as a damped discrete harmonic oscillator. Its frequency is tracked online by a weighted-frequency Fourier linear combiner (WFLC) on the relative gyro rate, which keeps the phase lag of the tremor estimate below 5° when the tremor frequency drifts between 4 and 6 Hz (synthetic data).
 - **Control** — discrete LQR on the tremor states only, gain-scheduled on the tremor frequency.
-- **Actuation** — two BLDC 2804 gimbal motors (SimpleFOC, torque mode), pulley-to-lever ratio ≈ 6, antagonistic cables with pretension.
+- **Actuation** — two DFRobot 4015 gimbal BLDC motors with integrated AS5600 encoders (SimpleFOC, torque mode), pulley-to-lever ratio ≈ 3, antagonistic cables with pretension.
 - **Safety** — software torque limit, mechanical stops at ±40°, loop and IMU watchdogs, hard-wired emergency stop, motors disabled at boot.
 
 ## Repository layout
@@ -52,6 +52,14 @@ Requires [PlatformIO](https://platformio.org/).
 pio run -e mock -t upload      # IMUs + controller, motors mocked
 pio run -e openloop -t upload  # sine torque, for mechanical tests
 pio device monitor             # 921600 baud
+```
+
+## Tests
+
+The estimator in `src/estimator/` is a line-by-line single-precision port of the MATLAB reference in `matlab/`. A host-side test checks that both give the same outputs on the reference data in `data/ref/` (any C++17 compiler, no hardware needed):
+
+```bash
+g++ -std=c++17 -O2 -Isrc/estimator test/host/test_estimator.cpp src/estimator/tremor_estimator.cpp -o test_estimator && ./test_estimator
 ```
 
 Serial commands: `ARM`, `DISARM`, `LOG on`, `LOG off`, `SET tau_max 0.1`, `STATUS`.
