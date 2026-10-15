@@ -35,7 +35,7 @@ constexpr int MOTOR_B_EN = 17;
 constexpr int ENC_A_ANALOG = 34;  // AS5600 analog output, motor A
 constexpr int ENC_B_ANALOG = 35;  // AS5600 analog output, motor B
 
-constexpr int VBAT_ADC = 36;      // divider 100 k / 22 k
+constexpr int VBAT_ADC = 36;      // divider 100 k / 20 k
 constexpr int ESTOP = 23;         // button to GND, internal pull-up
 constexpr int BENCH_SYNC = 18;    // trial-start pulse from the bench ESP32
 }  // namespace pins
