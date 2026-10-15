@@ -40,7 +40,8 @@ src/estimator/          Kalman filter, frequency estimator
 src/control/            controller_step (LQR) and open-loop test stub
 matlab/                 modelling, Kalman/LQR design, analysis and figures
 data/ref/               reference logs used for regression tests
-docs/                   design notes
+docs/                   wiring and first power-up, recording protocol
+tools/                  record_log.py: record a trial from the serial port
 test/                   host-side tests (C++ vs MATLAB equivalence)
 ```
 
@@ -62,8 +63,10 @@ The estimator in `src/estimator/` is a line-by-line single-precision port of the
 g++ -std=c++17 -O2 -Isrc/estimator test/host/test_estimator.cpp src/estimator/tremor_estimator.cpp -o test_estimator && ./test_estimator
 ```
 
-Serial commands: `ARM`, `DISARM`, `LOG on`, `LOG off`, `SET tau_max 0.1`, `STATUS`.
-The log is one CSV line per sample (`t_us, ax1 … gz2, theta_hat, theta_v_hat, theta_t_hat, f_hat, tau_cmd, vbat`).
+Serial commands: `SCAN`, `WATCH on/off`, `LOG on/off`, `STATUS`, `ARM`, `DISARM`, `SET tau_max 0.1`.
+The log is one CSV line per sample (`n, t_us, ax1 … gz2, theta_hat, theta_v_hat, theta_t_hat, f_hat, tau_cmd, vbat, loop_us`); `n` is a sample counter to detect lost lines.
+
+First power-up of the sensor kit: [`docs/bringup.md`](docs/bringup.md). Recording a trial: `python3 tools/record_log.py trem5 -s 30` (protocol: [`docs/recording_protocol.md`](docs/recording_protocol.md)); analysis in MATLAB: `analyze_log('../data/raw/<file>.csv')`.
 
 ## Safety note
 

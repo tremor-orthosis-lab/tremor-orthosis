@@ -10,6 +10,7 @@ Modelling, estimator and controller design, and analysis of the logs. No toolbox
 | `run_adaptive_synthetic.m` | J-4.1 | online tremor-frequency estimation (WFLC vs EKF); exports `data/ref/wflc_ref.csv` |
 | `design_controller.m` | J-2.3 | controller design with the Kalman filter in the loop, Monte-Carlo robustness |
 | `sim_closed_loop.m` | J-2.2, J-2.3 | time-domain closed loop (noise, WFLC, saturation, delay), torque needed |
+| `analyze_log('<file>.csv')` | J-1.3, J-1.4 | one recorded trial: sample check, spectrum, accelerometer check, estimator offline |
 
 ## Functions
 
@@ -26,11 +27,13 @@ Modelling, estimator and controller design, and analysis of the logs. No toolbox
 | `dlqr_iter.m` | discrete LQR by Riccati iteration |
 | `inverse_dynamics.m` | torque that produces a given free wrist motion |
 | `bandpass_biquad.m`, `phase_fit.m`, `phase_lag_windowed.m` | baseline filter and phase-lag metrics |
+| `load_log.m` | read a firmware log (CSV, C3) into a struct, wrist angle and rate as in the firmware |
+| `psd_analysis.m` | reference angle (complementary filter), Welch PSD, spectrogram, tremor peak |
+| `gen_fake_log.m` | synthetic log in the firmware format, with the hand-acceleration effect on the accelerometer |
 
 ## Still to write
 
 | Script | Task |
 | --- | --- |
-| `load_log.m`, `psd_analysis.m` | J-1.4, read and analyse the real logs |
 | `identify.m` | J-3.4, identification of J, b, k and delay |
 | `metrics.m` | J-4.2, metrics pipeline on the bench logs |
