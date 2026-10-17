@@ -10,3 +10,4 @@ data/raw/
 
 # host test binary (test/host/test_estimator.cpp)
 test_estimator
+test_closed_loop

@@ -63,10 +63,16 @@ The estimator in `src/estimator/` is a line-by-line single-precision port of the
 g++ -std=c++17 -O2 -Isrc/estimator test/host/test_estimator.cpp src/estimator/tremor_estimator.cpp -o test_estimator && ./test_estimator
 ```
 
-Serial commands: `SCAN`, `WATCH on/off`, `LOG on/off`, `STATUS`, `ARM`, `DISARM`, `SET tau_max 0.1`.
+A second test runs the real firmware controller on a simulated wrist, with simulated IMUs in the frames of the contracts, so it also checks every sign from the sensors to the torque (> 50 % tremor attenuation at 4–6 Hz, voluntary motion changed by < 10 %):
+
+```bash
+g++ -std=c++17 -O2 -Iinclude -Isrc/estimator test/host/test_closed_loop.cpp src/control/controller.cpp src/estimator/tremor_estimator.cpp -o test_closed_loop && ./test_closed_loop
+```
+
+Serial commands: `SCAN`, `WATCH on/off`, `LOG on/off`, `STATUS`, `ARM`, `DISARM`, `SET tau_max 0.1`, `CTRL on/off` (tremor controller, off at boot), `IDENT <A> <f1> <f2> <T>` (torque chirp for identification).
 The log is one CSV line per sample (`n, t_us, ax1 … gz2, theta_hat, theta_v_hat, theta_t_hat, f_hat, tau_cmd, vbat, loop_us`); `n` is a sample counter to detect lost lines.
 
-First power-up of the sensor kit: [`docs/bringup.md`](docs/bringup.md). Recording a trial: `python3 tools/record_log.py trem5 -s 30` (protocol: [`docs/recording_protocol.md`](docs/recording_protocol.md)); analysis in MATLAB: `analyze_log('../data/raw/<file>.csv')`.
+First power-up of the sensor kit: [`docs/bringup.md`](docs/bringup.md). Identification and first closed loop on the bench: [`docs/closed_loop.md`](docs/closed_loop.md). Recording a trial: `python3 tools/record_log.py trem5 -s 30` (protocol: [`docs/recording_protocol.md`](docs/recording_protocol.md)); analysis in MATLAB: `analyze_log('../data/raw/<file>.csv')`.
 
 ## Safety note
 

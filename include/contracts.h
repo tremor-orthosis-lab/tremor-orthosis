@@ -70,9 +70,14 @@ constexpr int N_STATE = 4;  // x = [theta_v, omega_v, theta_t, omega_t]
 
 // The Kalman / WFLC tuning is in src/estimator/tremor_estimator.h
 // (EstimatorParams), kept identical to matlab/tremor_params.m.
+// Controller gains, tau = -K(f_hat)·x_hat, rows interpolated in f_hat.
+// Default = "virtual damper" on omega_t from matlab/design_controller.m
+// (p.ctrl.k_omega). Units: N·m/rad and N·m·s/rad. Re-tuned at J-3.4.
 struct Gains {
   float f0_hz[N_F0] = {4.0f, 5.0f, 6.0f};
-  float K[N_F0][N_STATE] = {};  // LQR gains, tau = -K·x_hat
+  float K[N_F0][N_STATE] = {{0.0f, 0.0f, 0.0f, 0.070f},
+                            {0.0f, 0.0f, 0.0f, 0.090f},
+                            {0.0f, 0.0f, 0.0f, 0.105f}};
 };
 
 struct DebugState {
@@ -114,6 +119,14 @@ float battery_voltage();                     // [V]
 void controller_init(const Gains& g);
 float controller_step(const ImuSample& s1, const ImuSample& s2, float dt);  // returns tau [N·m]
 void controller_get_debug(DebugState* d);
+// Modes (serial commands CTRL and IDENT in main.cpp). Both start OFF.
+void controller_set_enabled(bool on);  // tremor controller; gain ramps up over 1 s
+bool controller_enabled();
+// Identification (J-3.3): linear chirp torque amp·sin from f1 to f2 over dur,
+// 0.5 s fade in/out, replaces the controller output. Returns false if refused.
+bool controller_start_ident(float amp_Nm, float f1_Hz, float f2_Hz, float dur_s);
+void controller_stop_ident();
+bool controller_ident_running();
 
 // ---------------------------------------------------------------------------
 // C6 · Safety limits (enforced in drivers and in the main loop)

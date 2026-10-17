@@ -5,14 +5,17 @@ Usage (from the repository root, board plugged in, nothing else using the port):
     python3 tools/record_log.py rest            # 60 s, condition "rest"
     python3 tools/record_log.py trem5 -s 30     # 30 s
     python3 tools/record_log.py trem5 -p /dev/cu.usbserial-0001
+    python3 tools/record_log.py ident -s 35 -c "SET tau_max 0.1" -c ARM -c "IDENT 0.05 0.5 12 30"
 
 What it does
   1. Opens the serial port (921600 baud). This resets the ESP32: keep the
      arm STILL for the 2 s gyro calibration, until "ready" is printed.
-  2. Sends "LOG on", writes every CSV line to data/raw/<date>_<time>_<name>.csv
+  2. Sends "LOG on", then the -c commands in order (opening the port resets
+     the board, so ARM, CTRL, IDENT... must be given here, not before), and
+     writes every CSV line to data/raw/<date>_<time>_<name>.csv
      (data/raw/ is not committed; copy the files to the Drive).
-  3. Sends "LOG off" and "STATUS", then checks the file: lost samples (gaps
-     in the counter n), sample rate, worst loop time.
+  3. Sends "DISARM" (always, for safety), "LOG off" and "STATUS", then checks
+     the file: lost samples (gaps in the counter n), sample rate, worst loop.
 
 Requires pyserial:  python3 -m pip install pyserial
 """
@@ -89,6 +92,8 @@ def main():
     ap.add_argument("-s", "--seconds", type=float, default=60.0)
     ap.add_argument("-p", "--port", default=None)
     ap.add_argument("-o", "--outdir", default="data/raw")
+    ap.add_argument("-c", "--cmd", action="append", default=[],
+                    help="command sent once recording has started (repeatable, in order)")
     args = ap.parse_args()
 
     port = args.port or find_port()
@@ -119,6 +124,10 @@ def main():
                 out.write(line)
                 t_end = time.time() + args.seconds
                 print("Recording...")
+                for c in args.cmd:
+                    ser.write((c + "\n").encode())
+                    print(f"  > {c}")
+                    time.sleep(0.05)
                 continue
             if t_end is None:
                 continue
@@ -128,6 +137,7 @@ def main():
                 print(f"  {n / 500:.0f} s")
             if time.time() >= t_end:
                 break
+    ser.write(b"DISARM\n")
     ser.write(b"LOG off\n")
     time.sleep(0.3)
     ser.reset_input_buffer()

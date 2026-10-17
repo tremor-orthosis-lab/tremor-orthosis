@@ -21,7 +21,8 @@ struct EstimatorParams {
   float q_v = 1000.0f;    // voluntary white-acceleration intensity [rad²/s³]
   float q_t = 400.0f;     // tremor white-acceleration intensity [rad²/s³]
   float rho = 0.9998f;    // oscillator damping per step
-  float r_theta = 25.0f * (2.0f * 0.017453292f) * (2.0f * 0.017453292f);  // [rad²]
+  float r_theta = 400.0f * (2.0f * 0.017453292f) * (2.0f * 0.017453292f);  // [rad²]
+                          // = r_theta_scale * sigma_theta^2, see tremor_params.m
   float r_omega = 0.05f * 0.05f;                                          // [(rad/s)²]
   float p0 = 1e-2f;       // initial covariance (diagonal)
   bool seed_theta_v = true;  // start theta_v at the first measurement

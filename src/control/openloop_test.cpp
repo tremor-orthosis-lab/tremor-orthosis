@@ -31,4 +31,11 @@ float controller_step(const ImuSample& /*s1*/, const ImuSample& /*s2*/, float dt
 
 void controller_get_debug(DebugState* d) { *d = dbg; }
 
+// Modes of the real controller: not available in this stand-in.
+void controller_set_enabled(bool /*on*/) {}
+bool controller_enabled() { return false; }
+bool controller_start_ident(float, float, float, float) { return false; }
+void controller_stop_ident() {}
+bool controller_ident_running() { return false; }
+
 #endif  // USE_OPENLOOP_TEST

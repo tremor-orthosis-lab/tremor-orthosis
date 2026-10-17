@@ -11,6 +11,7 @@ Modelling, estimator and controller design, and analysis of the logs. No toolbox
 | `design_controller.m` | J-2.3 | controller design with the Kalman filter in the loop, Monte-Carlo robustness |
 | `sim_closed_loop.m` | J-2.2, J-2.3 | time-domain closed loop (noise, WFLC, saturation, delay), torque needed |
 | `analyze_log('<file>.csv')` | J-1.3, J-1.4 | one recorded trial: sample check, spectrum, accelerometer check, estimator offline |
+| `identify('<file>.csv')` | J-3.3 | J, K, B and delay of the real wrist from an `IDENT` log (frequency-domain fit) |
 
 ## Functions
 
@@ -29,11 +30,11 @@ Modelling, estimator and controller design, and analysis of the logs. No toolbox
 | `bandpass_biquad.m`, `phase_fit.m`, `phase_lag_windowed.m` | baseline filter and phase-lag metrics |
 | `load_log.m` | read a firmware log (CSV, C3) into a struct, wrist angle and rate as in the firmware |
 | `psd_analysis.m` | reference angle (complementary filter), Welch PSD, spectrogram, tremor peak |
-| `gen_fake_log.m` | synthetic log in the firmware format, with the hand-acceleration effect on the accelerometer |
+| `gen_fake_log.m`, `gen_fake_ident_log.m` | synthetic logs in the firmware format (tremor trial, identification run) |
+| `imu_from_motion.m`, `write_log.m` | simulated IMU readings in the C2 frames (incl. hand acceleration), CSV writer |
 
 ## Still to write
 
 | Script | Task |
 | --- | --- |
-| `identify.m` | J-3.4, identification of J, b, k and delay |
 | `metrics.m` | J-4.2, metrics pipeline on the bench logs |

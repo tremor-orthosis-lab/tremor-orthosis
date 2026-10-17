@@ -10,6 +10,10 @@
 //   WATCH on / WATCH off    human-readable values 5 times per second
 //                           (first power-up: wiring and sign checks)
 //   SCAN                    list the devices on the I²C bus
+//   CTRL on / CTRL off      tremor controller (J-3.1), off at boot
+//   IDENT <A> <f1> <f2> <T> identification chirp (J-3.3): torque A [N·m]
+//                           from f1 to f2 [Hz] over T [s]; IDENT stop
+//                           (torque is applied only after ARM)
 //   SET tau_max <N·m>       software torque limit (<= 0.3)
 //   SET ol_amp <N·m>        open-loop amplitude   (env "openloop" only)
 //   SET ol_freq <Hz>        open-loop frequency   (env "openloop" only)
@@ -18,6 +22,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <stdio.h>
 #include <esp_timer.h>
 
 #include "contracts.h"
@@ -78,10 +83,10 @@ void log_line(const ImuSample& a, const ImuSample& b, const DebugState& d, float
 void watch_line(const ImuSample& a, const ImuSample& b, const DebugState& d) {
   Serial.printf(
       "theta %+6.1f deg | omega %+7.1f deg/s | theta_v %+6.1f theta_t %+5.1f deg | "
-      "f %.1f Hz | acc1 %+5.1f %+5.1f %+5.1f | acc2 %+5.1f %+5.1f %+5.1f\n",
+      "f %.1f Hz | tau %+.3f | acc1 %+5.1f %+5.1f %+5.1f | acc2 %+5.1f %+5.1f %+5.1f\n",
       d.theta_hat * RAD2DEG, (a.gyr[1] - b.gyr[1]) * RAD2DEG, d.theta_v_hat * RAD2DEG,
-      d.theta_t_hat * RAD2DEG, d.f_hat, a.acc[0], a.acc[1], a.acc[2], b.acc[0], b.acc[1],
-      b.acc[2]);
+      d.theta_t_hat * RAD2DEG, d.f_hat, d.tau_cmd, a.acc[0], a.acc[1], a.acc[2], b.acc[0],
+      b.acc[1], b.acc[2]);
 }
 
 void i2c_scan() {
@@ -104,8 +109,13 @@ void i2c_scan() {
 void handle_command(String line) {
   line.trim();
   if (line.equalsIgnoreCase("ARM")) {
+    if (controller_enabled()) {  // restart the 1 s gain ramp
+      controller_set_enabled(false);
+      controller_set_enabled(true);
+    }
     motors_enable();
-    Serial.printf("# ARMED, tau_max = %.3f N·m\n", tau_max);
+    Serial.printf("# ARMED, tau_max = %.3f N·m, controller %s\n", tau_max,
+                  controller_enabled() ? "ON" : "off");
   } else if (line.equalsIgnoreCase("DISARM")) {
     motors_disable();
     Serial.println("# DISARMED");
@@ -122,10 +132,29 @@ void handle_command(String line) {
     watching = false;
   } else if (line.equalsIgnoreCase("SCAN")) {
     i2c_scan();
+  } else if (line.equalsIgnoreCase("CTRL on")) {
+    controller_set_enabled(true);
+    Serial.printf("# controller ON (gain ramps in over 1 s); torque applied only if ARMED, "
+                  "|tau| <= %.3f N·m\n", tau_max);
+  } else if (line.equalsIgnoreCase("CTRL off")) {
+    controller_set_enabled(false);
+    Serial.println("# controller off");
+  } else if (line.equalsIgnoreCase("IDENT stop")) {
+    controller_stop_ident();
+    Serial.println("# ident stopped");
+  } else if (line.startsWith("IDENT ")) {
+    float a = 0, f1 = 0, f2 = 0, T = 0;
+    if (sscanf(line.c_str() + 6, "%f %f %f %f", &a, &f1, &f2, &T) == 4 &&
+        controller_start_ident(a, f1, f2, T)) {
+      Serial.printf("# ident chirp: %.3f N·m, %.2f -> %.2f Hz, %.1f s%s\n", a, f1, f2, T,
+                    motors_enabled() ? "" : " (NOT ARMED: logged only)");
+    } else {
+      Serial.println("# usage: IDENT <amp N·m, <= 0.3> <f1 Hz> <f2 Hz> <T s>, e.g. IDENT 0.05 0.5 12 30");
+    }
   } else if (line.equalsIgnoreCase("STATUS")) {
-    Serial.printf("# armed=%d tau_max=%.3f overruns=%lu last_fault=%s vbat=%.2f\n",
-                  motors_enabled(), tau_max, (unsigned long)overruns, last_fault,
-                  battery_voltage());
+    Serial.printf("# armed=%d ctrl=%d ident=%d tau_max=%.3f overruns=%lu last_fault=%s vbat=%.2f\n",
+                  motors_enabled(), controller_enabled(), controller_ident_running(), tau_max,
+                  (unsigned long)overruns, last_fault, battery_voltage());
     Serial.printf("# samples=%lu loop_max=%lu us jitter_max=%lu us (since last STATUS)\n",
                   (unsigned long)n_sample, (unsigned long)loop_us_max,
                   (unsigned long)jitter_us_max);
@@ -191,7 +220,7 @@ void setup() {
   esp_timer_handle_t timer;
   esp_timer_create(&args, &timer);
   esp_timer_start_periodic(timer, LOOP_PERIOD_US);
-  Serial.println("# ready. Commands: SCAN, WATCH on/off, LOG on/off, STATUS, ARM, DISARM, SET");
+  Serial.println("# ready. Commands: SCAN, WATCH on/off, LOG on/off, STATUS, ARM, DISARM, CTRL on/off, IDENT, SET");
 }
 
 void loop() {

@@ -22,7 +22,16 @@ p.rho  = 0.9998;       % oscillator damping per step (1 = undamped)
 % theta_mes comes from accelerometer tilt: noisy AND corrupted by the hand
 % acceleration during tremor -> trusted much less than the gyro.
 p.sigma_theta = 2*pi/180;  % [rad] std of theta measurement (synthetic)
-p.r_theta_scale = 25;      % inflate R_theta (accel tilt is unreliable)
+p.r_theta_scale = 400;     % inflate R_theta: the accelerometer angle of the
+                           % hand is corrupted by the hand acceleration
+                           % (x3 in the tremor band if the IMU is 2 cm above
+                           % the wrist axis, gen_fake_log.m). With 400 the
+                           % accelerometer only corrects the gyro drift
+                           % (time constant ~1.4 s, < 1 deg error for a
+                           % 0.01 rad/s residual gyro bias). Was 25: closed-
+                           % loop attenuation fell from 60 % to 45-54 %
+                           % (test/host/test_closed_loop.cpp). Check on real
+                           % logs with analyze_log (accelerometer gain).
 p.sigma_omega = 0.05;      % [rad/s] std of relative gyro rate
 
 % --- Initial state and covariance ----------------------------------------
